@@ -48,7 +48,7 @@ func (s *roundRobinServerPool) Serve(w http.ResponseWriter, r *http.Request) {
 
 func (s *roundRobinServerPool) MarkBackendStatus(backendUrl *url.URL, alive bool) {
 	for _, item := range s.servers {
-		if item.GetUrl() == backendUrl.String() {
+		if item.GetUrl().String() == backendUrl.String() {
 			item.SetAlive(alive)
 			break
 		}
