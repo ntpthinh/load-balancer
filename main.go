@@ -28,6 +28,7 @@ func main() {
 	var port int
 	flag.StringVar(&serverList, "backends", "", "Load balanced backends, use comma to separate")
 	flag.IntVar(&port, "port", 3030, "Port to serve")
+	flag.Parse()
 	if len(serverList) == 0 {
 		log.Fatal("Please provide backend to load balance")
 	}
