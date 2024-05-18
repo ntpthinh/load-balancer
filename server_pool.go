@@ -1,9 +1,12 @@
 package main
 
 import (
+	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"sync/atomic"
+	"time"
 )
 
 type roundRobinServerPool struct {
@@ -18,6 +21,7 @@ type ServerPool interface {
 	GetServerPoolSize() int
 	Serve(http.ResponseWriter, *http.Request)
 	MarkBackendStatus(*url.URL, bool)
+	HealthCheck()
 }
 
 func (s *roundRobinServerPool) NextIndex() int {
@@ -48,5 +52,21 @@ func (s *roundRobinServerPool) MarkBackendStatus(backendUrl *url.URL, alive bool
 			item.SetAlive(alive)
 			break
 		}
+	}
+}
+func isBackendAlive(url *url.URL) bool {
+	timeout := 2 * time.Second
+	conn, err := net.DialTimeout("tcp", url.Host, timeout)
+	if err != nil {
+		log.Println("Site unreachable, err:", err)
+		return false
+	}
+	conn.Close()
+	return true
+}
+func (s *roundRobinServerPool) HealthCheck() {
+	for _, b := range s.servers {
+		alive := isBackendAlive(b.GetUrl())
+		b.SetAlive(alive)
 	}
 }

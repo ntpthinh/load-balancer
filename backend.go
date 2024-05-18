@@ -18,7 +18,7 @@ type Backend interface {
 	IsAlive() bool
 	SetAlive(bool)
 	Serve(http.ResponseWriter, *http.Request)
-	GetUrl() string
+	GetUrl() *url.URL
 }
 
 func (b *backend) IsAlive() (alive bool) {
@@ -38,6 +38,6 @@ func (b *backend) Serve(w http.ResponseWriter, r *http.Request) {
 	b.ReverseProxy.ServeHTTP(w, r)
 }
 
-func (b *backend) GetUrl() string{
-	return b.URL.String()
+func (b *backend) GetUrl() *url.URL {
+	return b.URL
 }

@@ -51,7 +51,10 @@ func main() {
 				return
 			}
 			serverPool.MarkBackendStatus(serverUrl, false)
-			lb(w, r)
+			attemps := GetAttemptsFromContext(r)
+			log.Printf("%s(%s) Attempting retry %d",r.RemoteAddr, r.URL.Path, attemps+1)
+			ctx := context.WithValue(r.Context(), Attemps, attemps+1)
+			lb(w, r.WithContext(ctx))
 		}
 	}
 }
