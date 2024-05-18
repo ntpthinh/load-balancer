@@ -32,6 +32,7 @@ func main() {
 		log.Fatal("Please provide backend to load balance")
 	}
 
+	serverPool := NewRoundRobinServerPool()
 	tokens := strings.Split(serverList, ",")
 	for _, token := range tokens {
 		serverUrl, err := url.Parse(token)
@@ -52,13 +53,37 @@ func main() {
 			}
 			serverPool.MarkBackendStatus(serverUrl, false)
 			attemps := GetAttemptsFromContext(r)
-			log.Printf("%s(%s) Attempting retry %d",r.RemoteAddr, r.URL.Path, attemps+1)
+			log.Printf("%s(%s) Attempting retry %d", r.RemoteAddr, r.URL.Path, attemps+1)
 			ctx := context.WithValue(r.Context(), Attemps, attemps+1)
 			lb(w, r.WithContext(ctx))
 		}
+
+		serverPool.AddBackend(&backend{
+			URL:          serverUrl,
+			Alive:        true,
+			ReverseProxy: proxy,
+		})
+	}
+	server := http.Server{
+		Addr:    ":8080",
+		Handler: http.HandlerFunc(lb),
+	}
+	go healthcheck()
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatal(err)
 	}
 }
-
+func healthcheck() {
+	t := time.NewTicker(time.Minute * 2)
+	for {
+		select {
+		case <-t.C:
+			log.Println("Start health check")
+			serverPool.HealthCheck()
+			log.Println("Health check completed")
+		}
+	}
+}
 func GetAttemptsFromContext(r *http.Request) int {
 	if attemps, ok := r.Context().Value(Attemps).(int); ok {
 		return attemps

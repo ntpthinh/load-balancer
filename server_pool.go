@@ -14,6 +14,21 @@ type roundRobinServerPool struct {
 	current uint64
 }
 
+// AddBackend implements ServerPool.
+func (s *roundRobinServerPool) AddBackend(newBackend Backend) {
+	s.servers = append(s.servers, newBackend)
+}
+
+// GetBackends implements ServerPool.
+func (s *roundRobinServerPool) GetBackends() []Backend {
+	return s.servers
+}
+
+// GetServerPoolSize implements ServerPool.
+func (s *roundRobinServerPool) GetServerPoolSize() int {
+	return len(s.servers)
+}
+
 type ServerPool interface {
 	GetNextPeer() Backend
 	GetBackends() []Backend
@@ -68,5 +83,10 @@ func (s *roundRobinServerPool) HealthCheck() {
 	for _, b := range s.servers {
 		alive := isBackendAlive(b.GetUrl())
 		b.SetAlive(alive)
+	}
+}
+func NewRoundRobinServerPool() ServerPool {
+	return &roundRobinServerPool{
+		servers: make([]Backend, 0),
 	}
 }
